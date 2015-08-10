@@ -1,0 +1,3 @@
+[submodule "setup/ansicon"]
+	path = setup/ansicon
+	url = https://github.com/adoxa/ansicon.git
