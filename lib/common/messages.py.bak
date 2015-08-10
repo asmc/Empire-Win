@@ -22,11 +22,11 @@ def title(version):
     """
     Print the tool title, with version.
     """
-    osstr = platform.system();
-    if "Windows" in osstr:
-        os.system('cls')
-    else:
-        os.system('clear')
+	osstr = platform.system();
+	if "Windows" in osstr:
+		os.system('cls')
+	else:
+		os.system('clear')
     print "========================================================================="
     print " Empire: PowerShell post-exploitation agent | [Version]: " + version
     print '========================================================================='
