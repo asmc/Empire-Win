@@ -1,2 +1,2 @@
 @echo off
-ansicon
+setup\ansicon\x64\ansicon
