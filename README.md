@@ -8,5 +8,15 @@ Empire relies heavily on the work from several other projects for its underlying
 
 Empire is developed by @harmj0y, @sixdub, and @enigma0x3.
 
+=========================================================================
 
-add support for windows:)
+Install for any system:
+python setup/install-all.py
+it will install all necessary dependencies files
+
+Start Empire:
+ windows: Double click start.bat
+ *nix: python empire
+
+ Empire windows version by asmc modify:) 
+ Happy hunting~
