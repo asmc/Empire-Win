@@ -3,5 +3,5 @@ data/empire.db
 empire.debug
 *.pyc
 downloads/*
-
+*.bak
 README.md.bak

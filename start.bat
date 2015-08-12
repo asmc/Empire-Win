@@ -1,2 +1,4 @@
 @echo off
-setup\ansicon\x64\ansicon
+setup\ansicon\ansicon -i
+python empire
+setup\ansicon\ansicon -u
