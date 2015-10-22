@@ -1,16 +1,16 @@
 from lib.common import helpers
-import os
 
 class Module:
 
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-FileFinder',
+            'Name': 'Invoke-UserHunter',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds sensitive files on the domain.'),
+            'Description': ('Finds which machines users of a specified group are logged into. '
+                            'Part of PowerView.'),
 
             'Background' : True,
 
@@ -19,11 +19,11 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-
+            
             'MinPSVersion' : '2',
-
+            
             'Comments': [
-                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
+                'https://github.com/Veil-Framework/PowerTools/tree/master/PowerView'
             ]
         }
 
@@ -37,72 +37,62 @@ class Module:
                 'Value'         :   ''
             },
             'Hosts' : {
-                'Description'   :   "Host array to enumerate.",
+                'Description'   :   'Hosts to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'HostList' : {
-                'Description'   :   "List of hostnames/IPs to search.",
+                'Description'   :   'Hostlist to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'HostFilter' : {
-                'Description'   :   "Host filter name to query AD for, wildcards accepted.",
+                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ShareList' : {
-                'Description'   :   "List if \\HOST\shares to search through.",
+            'UserName' : {
+                'Description'   :   'Specific username to search for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Terms' : {
-                'Description'   :   "Comma-separated terms to search for (overrides defaults).",
+            'GroupName' : {
+                'Description'   :   'Group to query for user names.',
+                'Required'      :   False,
+                'Value'         :   ''            
+            },
+            'UserList' : {
+                'Description'   :   'List of usernames to search for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'OfficeDocs' : {
-                'Description'   :   "Switch. Return only office documents.",
+            'StopOnSuccess' : {
+                'Description'   :   'Switch. Stop when a target user is found.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
-            'FreshEXES' : {
-                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ExcludeHidden' : {
-                'Description'   :   "Switch. Exclude hidden files and folders from the search results.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CheckWriteAccess' : {
-                'Description'   :   "Switch. Only returns files the current user has write access to.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AccessDateLimit' : {
-                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CreateDateLimit' : {
-                'Description'   :   "Only return files with a CreationDate greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
+            },      
             'NoPing' : {
-                'Description'   :   "Switch. Don't ping each host to ensure it's up before enumerating.",
+                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },            
+            },
+            'CheckAccess' : {
+                'Description'   :   'Switch. Check if the current user has local admin access to found machines.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'Delay' : {
-                'Description'   :   "Delay between enumerating hosts, defaults to 0.",
+                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+            'ShowAll' : {
+                'Description'   :   'Switch. Show all result output.',
+                'Required'      :   False,
+                'Value'         :   ''            
             },
             'Domain' : {
-                'Description'   :   "Domain to query for machines.",
+                'Description'   :   'Domain to enumerate for hosts.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -111,7 +101,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -120,9 +110,9 @@ class Module:
 
 
     def generate(self):
-
+        
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-FileFinder.ps1".replace('/', os.sep)
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1".replace('/', os.sep)
 
         try:
             f = open(moduleSource, 'r')
@@ -135,13 +125,19 @@ class Module:
 
         script = moduleCode
 
-        script += "Invoke-FileFinder "
+        script += "Invoke-UserHunter "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
-                    script += " -" + str(option) + " " + str(values['Value']) 
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
+        
+        script += "| Select-Object TargetUser, Computer, IP, SessionFrom, LocalAdmin | ft -autosize | Out-String | %{$_ + \"`n\"}"
 
-        script += " | Out-String"
+        script += ';"`nInvoke-UserHunter completed"'
 
         return script

