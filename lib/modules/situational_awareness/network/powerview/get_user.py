@@ -1,17 +1,15 @@
 from lib.common import helpers
-import os
 
 class Module:
 
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-UserHunter',
+            'Name': 'Get-NetUser',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds which machines users of a specified group are logged into. '
-                            'Part of PowerView.'),
+            'Description': ('Query information for a given user or users in the specified domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -37,63 +35,33 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   'Hosts to enumerate.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostFilter' : {
-                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'UserName' : {
-                'Description'   :   'Specific username to search for.',
+                'Description'   :   'Username filter string, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
-            'GroupName' : {
-                'Description'   :   'Group to query for user names.',
-                'Required'      :   False,
-                'Value'         :   ''            
-            },
-            'UserList' : {
-                'Description'   :   'List of usernames to search for.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'StopOnSuccess' : {
-                'Description'   :   'Switch. Stop when a target user is found.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },      
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CheckAccess' : {
-                'Description'   :   'Switch. Check if the current user has local admin access to found machines.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Delay' : {
-                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ShowAll' : {
-                'Description'   :   'Switch. Show all result output.',
-                'Required'      :   False,
-                'Value'         :   ''            
             },
             'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ADSpath' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Filter' : {
+                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SPN' : {
+                'Description'   :   'Switch. Only return user objects with non-null service principal names.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -112,8 +80,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1".replace('/', os.sep)
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -124,9 +94,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-UserHunter "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -136,9 +107,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         
-        script += "| Select-Object TargetUser, Computer, IP, SessionFrom, LocalAdmin | ft -autosize | Out-String | %{$_ + \"`n\"}"
-
-        script += ';"`nInvoke-UserHunter completed"'
-
         return script

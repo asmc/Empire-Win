@@ -5,12 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-FindLocalAdminAccess',
+            'Name': 'Find-ComputerField',
 
-            'Author': ['@harmj0y'],
+            'Author': ['@obscuresec', '@harmj0y'],
 
-            'Description': ('Finds machines on the local domain where the current user has '
-                            'local administrator access.'),
+            'Description': ("Searches user object fields for a given word (default *pass*). Default field being searched is 'description'."),
 
             'Background' : True,
 
@@ -19,10 +18,11 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-
+            
             'MinPSVersion' : '2',
             
             'Comments': [
+                'http://obscuresecurity.blogspot.com/2014/04/ADSISearcher.html',
                 'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
         }
@@ -36,36 +36,26 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   'Hosts to enumerate.',
+            'SearchTerm' : {
+                'Description'   :   'Term to search for, default of "pass".',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostFilter' : {
-                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },      
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Delay' : {
-                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
+            'SearchField' : {
+                'Description'   :   'Field to search in, default of "description".',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
                 'Required'      :   False,
                 'Value'         :   ''
-            }
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
         }
 
         # save off a copy of the mainMenu object to access external functionality
@@ -81,8 +71,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-FindLocalAdminAccess.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -93,9 +85,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-FindLocalAdminAccess "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -105,7 +98,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
-        script += ' | Out-String | %{$_ + \"`n\"};"`nInvoke-FindLocalAdminAccess completed"'
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

@@ -1,3 +1,4 @@
+import base64
 from lib.common import helpers
 
 class Module:
@@ -5,25 +6,24 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-ExploitableSystems',
+            'Name': 'Find-Fruit',
 
-            'Author': ['Scott Sutherland (@_nullbind)'],
+            'Author': ['@424f424f'],
 
-            'Description': ('Queries Active Directory for systems likely vulnerable to various '
-                            'Metasploit exploits.'),
+            'Description': ("Searches a network range for potentially vulnerable web services."),
 
             'Background' : True,
 
             'OutputExtension' : None,
             
             'NeedsAdmin' : False,
-
+ 
             'OpsecSafe' : True,
-            
+
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/nullbind/Powershellery/blob/master/Stable-ish/ADS/Get-ExploitableSystems.psm1'
+                'Inspired by mattifestation Get-HttpStatus in PowerSploit'
             ]
         }
 
@@ -36,13 +36,33 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Specific domain controller to query against.',
+            'Rhosts' : {
+                'Description'   :   'Specify the CIDR range or host to scan.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'Port' : {
+                'Description'   :   'Specify the port to scan.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'SearchDN' : {
-                'Description'   :   'Distinguished Name Path to limit search to.',
+            'Path' : {
+                'Description'   :   'Specify the path to a dictionary file.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Timeout' : {
+                'Description'   :   'Set timeout for each connection in milliseconds',
+                'Required'      :   False,
+                'Value'         :   '50'
+            },
+            'UseSSL' : {
+                'Description'   :   'Force SSL useage.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ShowAll' : {
+                'Description'   :   'Switch. Show all results (default is to only show 200s).',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -51,7 +71,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -60,9 +80,9 @@ class Module:
 
 
     def generate(self):
-
+        
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-ExploitableSystems.psm1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/recon/Find-Fruit.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -75,17 +95,22 @@ class Module:
 
         script = moduleCode
 
-        script += "Get-ExploitableSystems "
+        script += "\nFind-Fruit"
+
+        showAll = self.options['ShowAll']['Value'].lower()
 
         for option,values in self.options.iteritems():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "showall":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += " | ft -autosize | Out-String | %{$_ + \"`n\"}"
+        if showAll != "true":
+            script += " | ?{$_.Status -eq 'OK'}"
+
+        script += " | Format-Table -AutoSize | Out-String"
 
         return script

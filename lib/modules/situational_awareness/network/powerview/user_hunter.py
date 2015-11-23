@@ -6,11 +6,12 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-FileFinder',
+            'Name': 'Invoke-UserHunter',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds sensitive files on the domain.'),
+            'Description': ('Finds which machines users of a specified group are logged into. '
+                            'Part of PowerView.'),
 
             'Background' : True,
 
@@ -19,9 +20,9 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-
+            
             'MinPSVersion' : '2',
-
+            
             'Comments': [
                 'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
@@ -36,73 +37,78 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   "Host array to enumerate.",
+            'ComputerName' : {
+                'Description'   :   'Hosts to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   "List of hostnames/IPs to search.",
+            'ComputerFilter' : {
+                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostFilter' : {
-                'Description'   :   "Host filter name to query AD for, wildcards accepted.",
+            'GroupName' : {
+                'Description'   :   'Group name to query for target users.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ShareList' : {
-                'Description'   :   "List if \\HOST\shares to search through.",
+            'TargetServer' : {
+                'Description'   :   'Hunt for users who are effective local admins on a target server.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Terms' : {
-                'Description'   :   "Comma-separated terms to search for (overrides defaults).",
+            'UserName' : {
+                'Description'   :   'Specific username to search for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'OfficeDocs' : {
-                'Description'   :   "Switch. Return only office documents.",
+            'UserFilter' : {
+                'Description'   :   'A customized ldap filter string to use for user enumeration, e.g. "(description=*admin*)"',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'FreshEXES' : {
-                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ExcludeHidden' : {
-                'Description'   :   "Switch. Exclude hidden files and folders from the search results.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CheckWriteAccess' : {
-                'Description'   :   "Switch. Only returns files the current user has write access to.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AccessDateLimit' : {
-                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CreateDateLimit' : {
-                'Description'   :   "Only return files with a CreationDate greater than this date value.",
+            'StopOnSuccess' : {
+                'Description'   :   'Switch. Stop hunting after finding after finding a target user.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'NoPing' : {
-                'Description'   :   "Switch. Don't ping each host to ensure it's up before enumerating.",
+                'Description'   :   "Don't ping each host to ensure it's up before enumerating.",
                 'Required'      :   False,
                 'Value'         :   ''
-            },            
+            },
+            'CheckAccess' : {
+                'Description'   :   'Switch. Check if the current user has local admin access to found machines.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'Delay' : {
-                'Description'   :   "Delay between enumerating hosts, defaults to 0.",
+                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   "Domain to query for machines.",
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ShowAll' : {
+                'Description'   :   'Switch. Return all user location results without filtering.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Stealth' : {
+                'Description'   :   'Switch. Only enumerate sessions from connonly used target servers.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Threads' : {
+                'Description'   :   'The maximum concurrent threads to execute.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -111,7 +117,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -120,9 +126,11 @@ class Module:
 
 
     def generate(self):
-
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-FileFinder.ps1".replace('/', os.sep)
+        
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -133,15 +141,20 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-FileFinder "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
-                    script += " -" + str(option) + " " + str(values['Value']) 
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += " | Out-String"
-
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        
         return script
