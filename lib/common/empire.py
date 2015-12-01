@@ -29,7 +29,7 @@ import modules
 import stagers
 import credentials
 import time
-
+import platform
 
 # custom exceptions used for nested menu navigation
 class NavMain(Exception): pass
@@ -585,8 +585,10 @@ class MainMenu(cmd.Cmd):
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
-
-        modules = self.modules.modules.keys()
+        if "Windows" in platform.system():
+            modules = sorted(self.modules.modules.keys())
+        else:
+            modules = self.modules.modules.keys()
 
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
@@ -1645,25 +1647,25 @@ class AgentMenu(cmd.Cmd):
             if len(line.split(" "))==2:
                 pid = line.split(" ")[1].strip()
 
-            if self.mainMenu.modules.modules["management/psinject"]:
+            if self.mainMenu.modules.modules["management/psinject".replace('/', os.sep)]:
 
                 if listenerID != "" and self.mainMenu.listeners.is_listener_valid(listenerID):
 
-                    module = self.mainMenu.modules.modules["management/psinject"]
+                    module = self.mainMenu.modules.modules["management/psinject".replace('/', os.sep)]
                     module.options['Listener']['Value'] = listenerID
                     module.options['Agent']['Value']=self.mainMenu.agents.get_agent_name(self.sessionID)
 
                     if pid != '':
                         module.options['ProcId']['Value'] = pid
 
-                    l = ModuleMenu(self.mainMenu, "management/psinject")
+                    l = ModuleMenu(self.mainMenu, "management/psinject".replace('/', os.sep))
                     l.cmdloop()
 
                 else:
                     print helpers.color("[!] Please enter <listenerName> <pid>")
 
             else:
-                print helpers.color("[!] management/psinject module not loaded") 
+                print helpers.color("[!] management/psinject module not loaded".replace('/', os.sep)) 
 
         else:
             print helpers.color("[!] Injection requires you to specify listener")
@@ -1680,25 +1682,25 @@ class AgentMenu(cmd.Cmd):
             if len(line.split(" "))==2:
                 pid = line.split(" ")[1].strip()
 
-            if self.mainMenu.modules.modules["code_execution/invoke_shellcode"]:
+            if self.mainMenu.modules.modules["code_execution"+os.sep+"invoke_shellcode"]:
 
                 if listenerID != "" and self.mainMenu.listeners.is_listener_valid(listenerID):
 
-                    module = self.mainMenu.modules.modules["code_execution/invoke_shellcode"]
+                    module = self.mainMenu.modules.modules["code_execution"+os.sep+"invoke_shellcode"]
                     module.options['Listener']['Value'] = listenerID
                     module.options['Agent']['Value']=self.mainMenu.agents.get_agent_name(self.sessionID)
 
                     if pid != '':
                         module.options['ProcessID']['Value'] = pid
 
-                    l = ModuleMenu(self.mainMenu, "code_execution/invoke_shellcode")
+                    l = ModuleMenu(self.mainMenu, "code_execution"+os.sep+"invoke_shellcode")
                     l.cmdloop()
 
                 else:
                     print helpers.color("[!] Please enter <listenerName> <pid>")
 
             else:
-                print helpers.color("[!] code_execution/invoke_shellcode module not loaded") 
+                print helpers.color("[!] code_execution"+os.sep+"invoke_shellcode module not loaded") 
 
         else:
             print helpers.color("[!] Injection requires you to specify listener")
@@ -1717,18 +1719,18 @@ class AgentMenu(cmd.Cmd):
             if listenerID != "" and self.mainMenu.listeners.is_listener_valid(listenerID):
 
                 #ensure the inject module is loaded
-                if self.mainMenu.modules.modules["management/spawn"]:
-                    module = self.mainMenu.modules.modules["management/spawn"]
+                if self.mainMenu.modules.modules["management"+os.sep+"spawn"]:
+                    module = self.mainMenu.modules.modules["management"+os.sep+"spawn"]
 
                     module.options['Listener']['Value'] = listenerID
                     module.options['Agent']['Value']=self.mainMenu.agents.get_agent_name(self.sessionID)
 
                     # jump to the spawn module
-                    l = ModuleMenu(self.mainMenu, "management/spawn")
+                    l = ModuleMenu(self.mainMenu, "management"+os.sep+"spawn")
                     l.cmdloop()
 
                 else:
-                    print helpers.color("[!] management/spawn module not loaded") 
+                    print helpers.color("[!] management"+os.sep+"spawn module not loaded") 
 
             else:
                 print helpers.color("[!] Please enter a valid listener name or ID.")
@@ -1750,18 +1752,18 @@ class AgentMenu(cmd.Cmd):
             if listenerID != "" and self.mainMenu.listeners.is_listener_valid(listenerID):
 
                 #ensure the inject module is loaded
-                if self.mainMenu.modules.modules["privesc/bypassuac"]:
-                    module = self.mainMenu.modules.modules["privesc/bypassuac"]
+                if self.mainMenu.modules.modules["privesc"+os.sep+"bypassuac"]:
+                    module = self.mainMenu.modules.modules["privesc"+os.sep+"bypassuac"]
 
                     module.options['Listener']['Value'] = listenerID
                     module.options['Agent']['Value']=self.mainMenu.agents.get_agent_name(self.sessionID)
 
                     # jump to the spawn module
-                    l = ModuleMenu(self.mainMenu, "privesc/bypassuac")
+                    l = ModuleMenu(self.mainMenu, "privesc"+os.sep+"bypassuac")
                     l.do_execute("")
 
                 else:
-                    print helpers.color("[!] privesc/bypassuac module not loaded") 
+                    print helpers.color("[!] privesc"+os.sep+"bypassuac module not loaded") 
 
             else:
                 print helpers.color("[!] Please enter a valid listener name or ID.")
@@ -1774,13 +1776,13 @@ class AgentMenu(cmd.Cmd):
         "Runs Invoke-Mimikatz on the client."
         
         #ensure the credentials/mimiktaz/logonpasswords module is loaded
-        if self.mainMenu.modules.modules["credentials/mimikatz/logonpasswords"]:
-            module = self.mainMenu.modules.modules["credentials/mimikatz/logonpasswords"]
+        if self.mainMenu.modules.modules["credentials"+os.sep+"mimikatz"+os.sep+"logonpasswords"]:
+            module = self.mainMenu.modules.modules["credentials"+os.sep+"mimikatz"+os.sep+"logonpasswords"]
 
             module.options['Agent']['Value']=self.mainMenu.agents.get_agent_name(self.sessionID)
 
             # execute the Mimikatz module
-            l = ModuleMenu(self.mainMenu, "credentials/mimikatz/logonpasswords")
+            l = ModuleMenu(self.mainMenu, "credentials"+os.sep+"mimikatz"+os.sep+"logonpasswords")
             l.do_execute("")
 
 
@@ -1793,11 +1795,11 @@ class AgentMenu(cmd.Cmd):
             print helpers.color("[!] Please specify a <CredID>.")
             return
 
-        if self.mainMenu.modules.modules["credentials/mimikatz/pth"]:
+        if self.mainMenu.modules.modules["credentials/mimikatz/pth".replace('/', os.sep)]:
             # reload the module to reset the default values
-            module = self.mainMenu.modules.reload_module("credentials/mimikatz/pth")
+            module = self.mainMenu.modules.reload_module("credentials/mimikatz/pth".replace('/', os.sep))
 
-            module = self.mainMenu.modules.modules["credentials/mimikatz/pth"]
+            module = self.mainMenu.modules.modules["credentials/mimikatz/pth".replace('/', os.sep)]
 
             # set mimikt/pth to use the given CredID
             module.options['CredID']['Value'] = credID
@@ -1806,7 +1808,7 @@ class AgentMenu(cmd.Cmd):
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name(self.sessionID)
 
             # execute the mimikatz/pth module
-            l = ModuleMenu(self.mainMenu, "credentials/mimikatz/pth")
+            l = ModuleMenu(self.mainMenu, "credentials/mimikatz/pth".replace('/', os.sep))
             l.do_execute("")
 
 
@@ -1821,9 +1823,9 @@ class AgentMenu(cmd.Cmd):
 
         if self.mainMenu.modules.modules["credentials/tokens"]:
             # reload the module to reset the default values
-            module = self.mainMenu.modules.reload_module("credentials/tokens")
+            module = self.mainMenu.modules.reload_module("credentials/tokens".replace('/', os.sep))
 
-            module = self.mainMenu.modules.modules["credentials/tokens"]
+            module = self.mainMenu.modules.modules["credentials/tokens".replace('/', os.sep)]
 
             # set credentials/token to impersonate the given process ID token
             module.options['ImpersonateUser']['Value'] = "True"
@@ -1833,7 +1835,7 @@ class AgentMenu(cmd.Cmd):
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name(self.sessionID)
 
             # execute the token module
-            l = ModuleMenu(self.mainMenu, "credentials/tokens")
+            l = ModuleMenu(self.mainMenu, "credentials/tokens".replace('/', os.sep))
             l.do_execute("")
 
 
@@ -1842,9 +1844,9 @@ class AgentMenu(cmd.Cmd):
 
         if self.mainMenu.modules.modules["credentials/tokens"]:
             # reload the module to reset the default values
-            module = self.mainMenu.modules.reload_module("credentials/tokens")
+            module = self.mainMenu.modules.reload_module("credentials/tokens".replace('/', os.sep))
 
-            module = self.mainMenu.modules.modules["credentials/tokens"]
+            module = self.mainMenu.modules.modules["credentials/tokens".replace('/', os.sep)]
 
             # set credentials/token to revert to self
             module.options['RevToSelf']['Value'] = "True"
@@ -1853,7 +1855,7 @@ class AgentMenu(cmd.Cmd):
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name(self.sessionID)
 
             # execute the token module
-            l = ModuleMenu(self.mainMenu, "credentials/tokens")
+            l = ModuleMenu(self.mainMenu, "credentials/tokens".replace('/', os.sep))
             l.do_execute("")
 
 

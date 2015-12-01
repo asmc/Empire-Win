@@ -1,4 +1,5 @@
 from lib.common import helpers
+import os
 
 class Module:
 
@@ -133,7 +134,7 @@ class Module:
         moduleName = self.info["Name"]
         
         # read in the common powerview.ps1 module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-FileFinder.ps1"
 
         try:
             f = open(moduleSource, 'r')

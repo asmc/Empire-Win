@@ -1,17 +1,17 @@
 from lib.common import helpers
-import os
 
 class Module:
 
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-UserHunter',
+            'Name': 'Invoke-StealthUserHunter',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds which machines users of a specified group are logged into. '
-                            'Part of PowerView.'),
+            'Description': ('Finds which machines users of a specified group are logged into by '
+                            'querying AD for servers likely to have high traffic (file servers, DCs, etc.) '
+                            'and enumerating sessions again each. Part of PowerView.'),
 
             'Background' : True,
 
@@ -24,7 +24,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
+                'https://github.com/Veil-Framework/PowerTools/tree/master/PowerView'
             ]
         }
 
@@ -37,23 +37,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'ComputerName' : {
+            'Hosts' : {
                 'Description'   :   'Hosts to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ComputerFilter' : {
-                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'GroupName' : {
-                'Description'   :   'Group name to query for target users.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'TargetServer' : {
-                'Description'   :   'Hunt for users who are effective local admins on a target server.',
+            'HostList' : {
+                'Description'   :   'Hostlist to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -62,18 +52,23 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'UserFilter' : {
-                'Description'   :   'A customized ldap filter string to use for user enumeration, e.g. "(description=*admin*)"',
+            'GroupName' : {
+                'Description'   :   'Group to query for user names.',
+                'Required'      :   False,
+                'Value'         :   ''            
+            },
+            'UserList' : {
+                'Description'   :   'List of usernames to search for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'StopOnSuccess' : {
-                'Description'   :   'Switch. Stop hunting after finding after finding a target user.',
+                'Description'   :   'Switch. Stop when a target user is found.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
+            },      
             'NoPing' : {
-                'Description'   :   "Don't ping each host to ensure it's up before enumerating.",
+                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -87,28 +82,13 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Domain' : {
-                'Description'   :   'The domain to use for the query, defaults to the current domain.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'ShowAll' : {
-                'Description'   :   'Switch. Return all user location results without filtering.',
+                'Description'   :   'Switch. Show all result output.',
                 'Required'      :   False,
-                'Value'         :   ''
+                'Value'         :   ''            
             },
-            'Stealth' : {
-                'Description'   :   'Switch. Only enumerate sessions from connonly used target servers.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Threads' : {
-                'Description'   :   'The maximum concurrent threads to execute.',
+            'Domain' : {
+                'Description'   :   'Domain to enumerate for hosts.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -127,10 +107,8 @@ class Module:
 
     def generate(self):
         
-        moduleName = self.info["Name"]
-        
-        # read in the common powerview.ps1 module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1"
+        # read in the common module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1".replace('/', os.sep)
 
         try:
             f = open(moduleSource, 'r')
@@ -141,10 +119,9 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = moduleCode
 
-        script += moduleName + " "
+        script += "Invoke-StealthUserHunter "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -154,7 +131,9 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-
-        script += ' | ft -wrap | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         
+        script += "| Select-Object TargetUser, Computer, IP, SessionFrom, LocalAdmin | ft -autosize | Out-String | %{$_ + \"`n\"}"
+
+        script += ';"`nInvoke-StealthUserHunter completed"'
+
         return script
