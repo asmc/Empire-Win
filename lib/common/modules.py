@@ -13,6 +13,7 @@ import os
 import imp
 import messages
 import helpers
+import platform
 
 
 class Modules:
@@ -46,7 +47,7 @@ class Modules:
         """
         
         if rootPath == '':
-            rootPath = self.installPath + 'lib/modules/'
+        rootPath = self.installPath + 'lib/modules/'
 
         pattern = '*.py'
         print helpers.color("[*] Loading modules from: %s" %(rootPath))
@@ -59,7 +60,7 @@ class Modules:
                 if filename == "template.py": continue
 
                 # extract just the module name from the full path
-                moduleName = filePath.split(rootPath)[-1][0:-3]
+                moduleName = filePath.split("/lib/modules/")[-1][0:-3]
 
                 if rootPath != self.installPath + 'lib/modules/':
                     moduleName = "external/%s" %(moduleName)
@@ -73,7 +74,7 @@ class Modules:
         Reload a specific module from the install + "/lib/modules/*" path
         """
 
-        rootPath = self.installPath + 'lib/modules/'
+        rootPath = self.installPath + 'lib/modules/'.replace('/', os.sep)
         pattern = '*.py'
          
         for root, dirs, files in os.walk(rootPath):
@@ -84,7 +85,7 @@ class Modules:
                 if filename == "template.py": continue
                 
                 # extract just the module name from the full path
-                moduleName = filePath.split("/lib/modules/")[-1][0:-3]
+                moduleName = filePath.split("/lib/modules/".replace('/', os.sep))[-1][0:-3]
 
                 # check to make sure we've found the specific module
                 if moduleName.lower() == moduleToReload.lower():
